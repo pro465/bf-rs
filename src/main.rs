@@ -13,12 +13,20 @@ fn main() {
     interpreter.run();
 }
 
+macro_rules! repeat {
+    ($times: ident, $s: stmt) => {{
+        for _ in 0..$times {
+            $s
+        }
+    }};
+}
+
 struct Interpreter<'a> {
     mem: [u8; 30_000],
     pc: usize,
     stack: Vec<usize>,
     pointer: usize,
-    file: Vec<u8>,
+    program: Vec<(u8, u16)>,
     input: Bytes<StdinLock<'a>>,
 }
 
@@ -29,33 +37,40 @@ impl<'a> Interpreter<'a> {
             pc: 0,
             stack: Vec::new(),
             pointer: 0,
-            file,
+            program: Self::preprocess(file),
             input,
         }
     }
 
     fn run(&mut self) {
-        while self.pc < self.file.len() {
+        while self.pc < self.program.len() {
             self.execute();
         }
     }
 
     fn execute(&mut self) {
-        let c = self.fetch();
+        let (c, count) = self.fetch();
 
         match c {
-            '+' => self.mem[self.pointer] += 1,
-            '-' => self.mem[self.pointer] -= 1,
-            '<' => self.pointer -= 1,
-            '>' => self.pointer += 1,
+            '+' => self.mem[self.pointer] += count as u8,
+            '-' => self.mem[self.pointer] -= count as u8,
+            '<' => self.pointer -= usize::from(count),
+            '>' => self.pointer += usize::from(count),
+            ',' => repeat!(
+                count,
+                self.mem[self.pointer] = self.input.next().unwrap().unwrap()
+            ),
+            '.' => repeat!(count, print!("{}", self.mem[self.pointer] as char)),
+
             '[' => {
                 if self.mem[self.pointer] == 0 {
                     self.pc += 1;
-                    let mut count: i32 = 0;
-                    while self.pc < self.file.len() && (self.fetch() != ']' || count > 0) {
+                    let mut count: u32 = 0;
+
+                    while self.pc < self.program.len() && (self.fetch().0 != ']' || count > 0) {
                         match self.fetch() {
-                            '[' => count += 1,
-                            ']' => count -= 1,
+                            ('[', x) => count = count.checked_add(x as u32).unwrap(),
+                            (']', x) => count = count.checked_sub(x as u32).unwrap(),
                             _ => {}
                         }
 
@@ -74,15 +89,34 @@ impl<'a> Interpreter<'a> {
                 }
             }
 
-            ',' => self.mem[self.pointer] = self.input.next().unwrap().unwrap(),
-            '.' => print!("{}", self.mem[self.pointer] as char),
             _ => {}
         }
 
         self.pc += 1;
     }
 
-    fn fetch(&self) -> char {
-        self.file[self.pc] as char
+    fn fetch(&self) -> (char, u16) {
+        (self.program[self.pc].0 as char, self.program[self.pc].1)
+    }
+
+    fn preprocess(file: Vec<u8>) -> Vec<(u8, u16)> {
+        let valid = ['+', '-', '[', ']', ',', '.', '<', '>'];
+
+        let mut res = Vec::with_capacity(file.len());
+
+        for i in file {
+            if let Some((x, count)) = res.last_mut() {
+                if i == *x && i as char != '[' && i as char != ']' {
+                    *count += 1;
+                    continue;
+                }
+            }
+
+            if valid.contains(&(i as char)) {
+                res.push((i, 1));
+            }
+        }
+
+        res
     }
 }
