@@ -1,5 +1,5 @@
 use std::env::{args, var};
-use std::io::{stdin, Bytes, Read, StdinLock};
+use std::io::{stdin, stdout, Bytes, Read, StdinLock, Write};
 
 fn main() {
     let file = var("PWD").unwrap() + "/" + &args().nth(1).expect("expected a filename");
@@ -11,14 +11,6 @@ fn main() {
     let mut interpreter = Interpreter::new(file, input.lock().bytes());
 
     interpreter.run();
-}
-
-macro_rules! repeat {
-    ($times: ident, $s: stmt) => {{
-        for _ in 0..$times {
-            $s
-        }
-    }};
 }
 
 struct Interpreter<'a> {
@@ -56,11 +48,14 @@ impl<'a> Interpreter<'a> {
             '-' => self.mem[self.pointer] = self.mem[self.pointer].wrapping_sub(count as u8),
             '<' => self.pointer -= usize::from(count),
             '>' => self.pointer += usize::from(count),
-            ',' => repeat!(
-                count,
-                self.mem[self.pointer] = self.input.next().unwrap().unwrap()
-            ),
-            '.' => repeat!(count, print!("{}", self.mem[self.pointer] as char)),
+            ',' => self.mem[self.pointer] = self.input.nth(count as usize - 1).unwrap().unwrap(),
+            '.' => {
+                for _ in 0..count {
+                    print!("{}", self.mem[self.pointer] as char);
+                }
+
+                stdout().flush().unwrap();
+            }
 
             '[' => {
                 if self.mem[self.pointer] == 0 {
