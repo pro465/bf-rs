@@ -52,8 +52,8 @@ impl<'a> Interpreter<'a> {
         let (c, count) = self.fetch();
 
         match c {
-            '+' => self.mem[self.pointer] += count as u8,
-            '-' => self.mem[self.pointer] -= count as u8,
+            '+' => self.mem[self.pointer] = self.mem[self.pointer].wrapping_add(count as u8),
+            '-' => self.mem[self.pointer] = self.mem[self.pointer].wrapping_sub(count as u8),
             '<' => self.pointer -= usize::from(count),
             '>' => self.pointer += usize::from(count),
             ',' => repeat!(
