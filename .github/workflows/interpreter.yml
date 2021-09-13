@@ -3,9 +3,12 @@ name: Interpreter
 on:
   push:
     branches: [ main ]
+    paths:
+        'interpreter/**'
   pull_request:
     branches: [ main ]
-
+    paths:
+        'interpreter/**'
 env:
   CARGO_TERM_COLOR: always
 
