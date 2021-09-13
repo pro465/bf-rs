@@ -3,9 +3,12 @@ name: Compiler
 on:
   push:
     branches: [ main ]
+    paths:
+        'compiler/**'
   pull_request:
     branches: [ main ]
-
+    paths:
+        'compiler/**'
 env:
   CARGO_TERM_COLOR: always
 
