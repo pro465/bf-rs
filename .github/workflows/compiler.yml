@@ -1,4 +1,4 @@
-name: Interpreter
+name: Compiler
 
 on:
   push:
