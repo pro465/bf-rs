@@ -34,7 +34,7 @@ fn main() {
     write(var("HOME").unwrap() + "/_rust.rs", rs_code).unwrap();
 
     Command::new("rustc")
-        .args(&["-O", "_rust.rs"])
+        .args(&["-C", "opt-level=3", "_rust.rs"])
         .current_dir(var("HOME").unwrap())
         .spawn()
         .unwrap()
