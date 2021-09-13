@@ -1,4 +1,4 @@
-name: Rust
+name: Interpreter
 
 on:
   push:
@@ -17,6 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo build --verbose
+      run: cd interpreter && cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cd interpreter && cargo test --verbose
