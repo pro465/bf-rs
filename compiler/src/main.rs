@@ -1,11 +1,16 @@
 use std::env::{args, var};
-use std::fs::{read_to_string, write};
+use std::fs::{self, read_to_string, write};
 use std::process::Command;
 
 fn main() {
-    let file = var("PWD").unwrap() + "/" + &args().nth(1).expect("expected a filename");
+    let path =
+        fs::canonicalize(args().nth(1).expect("expected a filename")).expect("invalid file name");
+    let mut rs_src_path = path.clone();
+    rs_src_path.set_file_name("_rust.rs");
+    let mut rs_dst_path = path.clone();
+    rs_dst_path.set_file_name("_rust");
 
-    let contents = read_to_string(file).unwrap();
+    let contents = read_to_string(path).unwrap();
 
     let transpiled: Vec<String> = contents
         .chars()
@@ -31,17 +36,17 @@ fn main() {
     ) + &flattened
         + "}";
 
-    write(var("HOME").unwrap() + "/_rust.rs", rs_code).unwrap();
+    write(rs_src_path.as_path(), rs_code).unwrap();
 
     Command::new("rustc")
-        .args(&["-C", "opt-level=3", "_rust.rs"])
-        .current_dir(var("HOME").unwrap())
+        .args(&["-C", "opt-level=3", rs_src_path.to_str().unwrap()])
+        .current_dir(rs_src_path.parent().unwrap())
         .spawn()
         .unwrap()
         .wait()
         .unwrap();
 
-    Command::new(var("HOME").unwrap() + "/_rust")
+    Command::new(rs_dst_path.to_str().unwrap())
         .spawn()
         .unwrap()
         .wait()
